@@ -1,3 +1,9 @@
+---
+title: "OpenMP for ICCS"
+author: "Arjen Tamerus and Chris Edsall"
+format: beamer
+---
+
 # OpenMP for ICCS
 
 ## Parallelism in compute

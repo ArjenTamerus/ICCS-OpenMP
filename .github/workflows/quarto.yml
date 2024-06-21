@@ -34,6 +34,13 @@ jobs:
         with:
           to: beamer
           path: OpenMP-ICCS.qmd
+          
+      - name: Upload rendered presentation
+        uses: actions/upload-artifact@v4
+        with:
+          name: upload-beamer-pdf
+          path: |
+            OpenMP-ICCS.pdf
       
       # add software dependencies here and any libraries
       

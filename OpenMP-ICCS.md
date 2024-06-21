@@ -1,6 +1,6 @@
 # OpenMP for ICCS
 
-# Parallelism in compute
+## Parallelism in compute
 
  - Serial limitations
  - Types of parallelism:
@@ -13,7 +13,7 @@
 
  - Amdahl's Law?
 
-# OpenMP
+## OpenMP
  - Directive-based: annotations in your source code
  - Only for: C, C++, Fortran
 
@@ -25,13 +25,13 @@
 
  - Today's focus is GPU, but will cover CPU briefly
 
-# OpenMP - Modi Operandi
+## OpenMP - Modi Operandi
  - Mention non-loop parallelism at the end, not focus of the session
   - tasking etc
   (mention all CPU methods work for GPU as well, tasks + events for GPU kernel
   dependencies & scheduling - perhaps at end, quite 
 
-# OpenMP - CPU
+## OpenMP - CPU
 
  - !$omp parallel do
    - !$omp parallel + !$omp do
@@ -45,7 +45,7 @@
      best solution, NUMA effects + memory bandwidth + cache thrashing + locking
        - Oh look it got complicated/
 
-# OpenMP - GPU
+## OpenMP - GPU
 
  - !$omp parallel do -> !$omp target parallel do
   - works!
@@ -53,22 +53,22 @@
 
  - > GPU architecture intermezzo
 
-# GPU Architecture
+## GPU Architecture
  - GPUs have a fundamentally different architecture to CPUs
  - My favourite bad analogy: trucks on a motorway vs freight train/container
    ship
  - <image for analogy>
 
-# GPU Architecture
+## GPU Architecture
  - <GPU architecture image (vs cpu?) >
 
  - Hierarchical nature
  - OpenMP maps quite closely
 
-# OpenMP - GPU 2
+## OpenMP - GPU 2
  - expand into target teams distribute parallel do simd
 
-# OpenMP - GPU memory
+## OpenMP - GPU memory
  - Offload device & CPU (usually) have separate physical memory
  [RAM]      [VRAM]
    |          |
@@ -77,7 +77,7 @@
 
 
 
-# OpenMP - data movement
+## OpenMP - data movement
  - By default, the OpenMP runtime will copy _all_ required data to and from the
 GPU memory by default
  - Can be extremely inefficient!
@@ -85,21 +85,21 @@ GPU memory by default
    - Note _map_: the runtime keeps a _mapping_ between host and device memory
    - GPU memory always has a host equivalent!*
 
-# Controlling data movement for a compute kernel
+## Controlling data movement for a compute kernel
 
  - omp target teams loop map(to:x) map(from:y) map(tofrom:z) map(alloc:tmp)
 
 
-# Data regions - structured
+## Data regions - structured
  - omp target data - structured/scoped
 
-# Data regions - unstructured
+## Data regions - unstructured
  - omp target enter/exit data - unstructured/unscoped
 
-# OpenMP - GPU libraries
+## OpenMP - GPU libraries
  - target variant
  - host\_data use\_device
 
-# Exercises
+## Exercises
 
 I guess saxpy?

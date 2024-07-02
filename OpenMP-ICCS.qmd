@@ -8,6 +8,11 @@ format: beamer
 
 ## Parallelism in compute
 
+ - Most common programming languages are inherently serial\*:
+   - C, Fortran, Python (mostly)
+
+ - If we want to scale up our calculations, we usually use any number of
+   frameworks or tools to 
  - Serial limitations
  - Types of parallelism:
   - Scale-out/Distributed (MPI, not in scope)
@@ -39,8 +44,10 @@ format: beamer
 
 ## OpenMP - CPU
 
+```
  - !$omp parallel do
    - !$omp parallel + !$omp do
+```
 
  - Thread parameters: identification, configuration etc
 
@@ -85,19 +92,93 @@ format: beamer
 
 ## OpenMP - data movement
  - By default, the OpenMP runtime will copy _all_ required data to and from the
-GPU memory by default
+GPU memory
  - Can be extremely inefficient!
- - Can control data movement using the _map_ clause
+ - Can control data movement using the `map` clause
    - Note _map_: the runtime keeps a _mapping_ between host and device memory
    - GPU memory always has a host equivalent!*
 
+## The `map` clause
+ - Adding a `map` clause to an omp target region provides the compiler with
+	 instructions on how to move data around
+ - Format:
+	   - `map(<operation>:var1[,var2,...])`
+		 - Valid operations: `to`, `from`, `tofrom`, `alloc`
+		 - `tofrom` is default
+	
+ (TODO: table-ise ops)
+
+ - Can control data movement per kernel, or create _data regions_
+	- Will discuss these in order
+
 ## Controlling data movement for a compute kernel
+```
+!$omp target teams loop
+do i=1,N
+	c(i) = a(i) + b(i)
+end do
+!$omp end target teams loop
+```
+ - By default, _all_ of `a`, `b` and `c` will be copied to the GPU at the start
+	 of this kernel, then back to the host after it's finished.
+ - Let's look at how the data is actually used!
 
- - omp target teams loop map(to:x) map(from:y) map(tofrom:z) map(alloc:tmp)
 
+## Controlling data movement for a compute kernel
+```
+!$omp target teams loop
+do i=1,N
+	c(i) = a(i) + b(i)
+end do
+!$omp end target teams loop
+```
+ - In this loop we are:
+	 - Reading from `a` and `b`
+	 - Writing the result to `c`
+
+## Controlling data movement for a compute kernel
+```
+!$omp target teams loop
+do i=1,N
+	c(i) = a(i) + b(i)
+end do
+!$omp end target teams loop
+```
+ - In this loop we are:
+	 - Reading from `a` and `b` -> Their value's don't change!
+	 - Writing the result to `c` -> We're not reading, so the GPU doesn't have to
+		 know the initial value!
+
+
+## Controlling data movement for a compute kernel
+```
+!$omp target teams loop map(to:a(1:N),b(1:N)) map(from:c(1:N))
+do i=1,N
+	c(i) = a(i) + b(i)
+end do
+!$omp end target teams loop
+```
+ - Now we're only copying `a` and `b` to the GPU, and only copying the final
+	 value of `c` back to the host.
+	  - This halves the amount of data we're moving around!
+
+## Keeping data resident on the GPU
+ - We've looked at optimising data movement _per kernel_
+ - Often, we'll have multiple kernels operating on the same data
+ - How do we avoid moving data around unnecessarily?
+
+## Data regions
+ - OpenMP data regions map data to the GPU, and _keep it there_ until the region
+	 ends.
+ - Can be either _structured_ or _unstructured_
+ - 
 
 ## Data regions - structured
  - omp target data - structured/scoped
+
+## Accessing host data within data regions
+ - Nested data regions
+ - `update` directive
 
 ## Data regions - unstructured
  - omp target enter/exit data - unstructured/unscoped

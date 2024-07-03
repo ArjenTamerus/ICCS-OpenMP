@@ -1,14 +1,28 @@
 ---
-title: "OpenMP for ICCS"
+title: "Intro to OpenMP for GPUs"
+subtitle: "2024 ICCS Summer School"
 author: "Arjen Tamerus and Chris Edsall"
 format: beamer
 ---
 
 # OpenMP for ICCS
 
+## Goals
+
+ - Get you going with OpenMP offloading
+
+ - ~ 1 hour introduction to OpenMP
+ - ~ 2 hours practical exercises
+
+## Restrictions
+
+ - OpenMP is a big specification
+ - We'll focus on a useful subset
+	 - Aim is to get you familiar with OpenMP
+
 ## Parallelism in compute
 
- - Most common programming languages are inherently serial\*:
+ - Most common programming languages are (still) inherently serial\*:
    - C, Fortran, Python (mostly)
 
  - If we want to scale up our calculations, we usually use any number of
@@ -19,8 +33,6 @@ format: beamer
   - Intra-node: threading (OpenMP-CPU)
   - Accelerators (e.g. GPU, A100/PVC)
     - main focus of talk
-
- - Mention it's quite condensed / only a subset due to limited time
 
  - Amdahl's Law?
 
@@ -44,7 +56,7 @@ format: beamer
 
 ## OpenMP - CPU
 
-```
+```fortran
  - !$omp parallel do
    - !$omp parallel + !$omp do
 ```
@@ -98,6 +110,12 @@ GPU memory
    - Note _map_: the runtime keeps a _mapping_ between host and device memory
    - GPU memory always has a host equivalent!*
 
+## Data movement - interlude
+\pause
+ - Moving data between host and device is *slow*
+\pause
+ - _Avoid_ it if you can!
+
 ## The `map` clause
  - Adding a `map` clause to an omp target region provides the compiler with
 	 instructions on how to move data around
@@ -112,7 +130,7 @@ GPU memory
 	- Will discuss these in order
 
 ## Controlling data movement for a compute kernel
-```
+```fortran
 !$omp target teams loop
 do i=1,N
 	c(i) = a(i) + b(i)
@@ -125,7 +143,7 @@ end do
 
 
 ## Controlling data movement for a compute kernel
-```
+```fortran
 !$omp target teams loop
 do i=1,N
 	c(i) = a(i) + b(i)
@@ -137,7 +155,7 @@ end do
 	 - Writing the result to `c`
 
 ## Controlling data movement for a compute kernel
-```
+```fortran
 !$omp target teams loop
 do i=1,N
 	c(i) = a(i) + b(i)
@@ -151,7 +169,7 @@ end do
 
 
 ## Controlling data movement for a compute kernel
-```
+```fortran
 !$omp target teams loop map(to:a(1:N),b(1:N)) map(from:c(1:N))
 do i=1,N
 	c(i) = a(i) + b(i)
@@ -171,22 +189,99 @@ end do
  - OpenMP data regions map data to the GPU, and _keep it there_ until the region
 	 ends.
  - Can be either _structured_ or _unstructured_
- - 
 
 ## Data regions - structured
- - omp target data - structured/scoped
+ - We can create structured (or scoped) data regions with the `omp target data`
+	 directive
+ - Useful when keeping data resident within a specific region of the code (e.g.
+	 within a subroutine).
+
+```fortran
+!$omp target data map(to:a(1:N)) map(tofrom:b(1:N))
+
+!$omp target teams loop
+do i=1,N
+	b(i) = a(i)+b(i)
+end do
+!$omp end target teams
+
+!$omp end target data
+```
+
 
 ## Accessing host data within data regions
- - Nested data regions
- - `update` directive
+ - May want to keep data resident on the GPU most of the time, but still need to
+	 update on the host.
+   - Nested data regions
+   - `update` directive
+
+## Update directive
+```fortran
+!$omp target data map(to:a(1:N)) map(tofrom:b(1:N))
+
+!$omp target teams loop
+a
+a
+a
+!$omp end target teams loop
+
+call update_on_host(a)
+!$omp target update to(a(1:N))
+
+!$omp target teams loop
+a
+a
+a
+!$omp end target teams loop
+
+!$omp end target data
+```
 
 ## Data regions - unstructured
  - omp target enter/exit data - unstructured/unscoped
 
 ## OpenMP - GPU libraries
- - target variant
- - host\_data use\_device
+ - For performance reasons, we might to call out to a GPU-enabled library
+	  - e.g. LAPACK, BLAS, FFT, Eigen etc
+ - May be vendor-specific (exercise for the reader)
+ - Often expect device memory pointers to be passed into them
+	
+## OpenMP - GPU libraries
+ - OpenMP can expose device pointers using the `use_device_addr` directive:
+
+```fortran
+integer :: N
+real, dimension(:) :: my_array
+
+...
+
+!$omp target data use_device_addr(my_array)
+	call my_gpu_library(N, my_array)
+!$omp end target data
+```
+ - also `is_device_ptr` etc
+
+## OpenMP - GPU libraries - target variant
+ - The `variant` directive (standardised in OpenMP 5.2) allows developers to
+	 specify host and device variants of the same routine, with the same interface
+ - OpenMP will choose correct variant based on the type of pointer (host or
+	 device) passed to the routine
+
+```fortran
+!$omp target data use_device_addr(A,B,C)
+!$omp target variant
+	call dgemm(..., A, ..., B, ..., C, ...) ! A, B, C are device pointers -> call device routine
+!$omp end target variant
+!$omp end target data
+```
 
 ## Exercises
+ - On GitHub
+ - Using Dawn
 
-I guess saxpy?
+## Logging in & getting started
+ - Login using:
+	 - https://login-web.hpc.cam.ac.uk
+	 - ssh <user>@login.hpc.cam.ac.uk
+
+ - `git clone git@github.com:ICCS/openmp.git`

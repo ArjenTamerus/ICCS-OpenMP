@@ -1,14 +1,31 @@
 ---
-title: "OpenMP for ICCS"
+title: "Intro to OpenMP for GPUs"
+subtitle: "2024 ICCS Summer School"
 author: "Arjen Tamerus and Chris Edsall"
 format: beamer
+fonttheme: "professionalfonts"
+aspectratio: 169
+date: 11/07/2024
 ---
 
 # OpenMP for ICCS
 
+## Goals
+
+ - Get you going with OpenMP offloading
+
+ - ~ 1 hour introduction to OpenMP
+ - ~ 2 hours practical exercises
+
+## Restrictions
+
+ - OpenMP is a big specification
+ - We'll focus on a useful subset (loop parallelism)
+	 - Aim is to get you familiar with OpenMP
+
 ## Parallelism in compute
 
- - Most common programming languages are inherently serial\*:
+ - Most common programming languages are (still) inherently serial\*:
    - C, Fortran, Python (mostly)
 
  - If we want to scale up our calculations, we usually use any number of
@@ -20,74 +37,339 @@ format: beamer
   - Accelerators (e.g. GPU, A100/PVC)
     - main focus of talk
 
- - Mention it's quite condensed / only a subset due to limited time
-
  - Amdahl's Law?
 
 ## OpenMP
  - Directive-based: annotations in your source code
- - Only for: C, C++, Fortran
+ 	- Only for: C, C++, Fortran
 
  - Origins: Fortran, then C, then unified
   - CPU-only until 4.5
 
- - GPU functionality developed from 5.x onwards; v6 releasing soon
+ - GPU functionality matured from 5.x onwards; v6 releasing soon
  - Feature parity between languages
 
- - Today's focus is GPU, but will cover CPU briefly
+ - Today's focus is GPU ('offload'), but will cover the CPU essentials
 
-## OpenMP - Modi Operandi
- - Mention non-loop parallelism at the end, not focus of the session
-  - tasking etc
-  (mention all CPU methods work for GPU as well, tasks + events for GPU kernel
-  dependencies & scheduling - perhaps at end, quite 
+## OpenMP - CPU
+ - As mentioned: OpenMP is a directive-based parallel framework
+   - Extends the language transparently: code unaffected unless the compiler is explicitly told to enable OpenMP
+ - Take `saxpy` as an example:
+
+```fortran
+do i=1,N
+	y(i) = a*x(i) + y(i)
+end do
+```
 
 ## OpenMP - CPU
 
+::: columns
+:::: column
+```fortran
+do i=1,N
+	y(i) = a*x(i) + y(i)
+end do
 ```
- - !$omp parallel do
-   - !$omp parallel + !$omp do
+::::
+\pause
+:::: column
+```fortran
+!$omp parallel do
+do i=1,N
+	y(i) = a*x(i) + y(i)
+end do
+!$omp end parallel do
 ```
+::::
+:::
 
- - Thread parameters: identification, configuration etc
+## OpenMP - CPU
 
- - default(none) shared(xyz) private(abc) firstprivate(def) ..
+::: columns
+:::: column
+```C
+for (int i = 0; i < N; i++) {
+	y[i] = a*x[i] + y[i];
+}
+```
+::::
+\pause
+:::: column
+```C
+#pragma omp parallel for
+for (int i = 0; i < N; i++) {
+	y[i] = a*x[i] + y[i];
+}
+```
+::::
+:::
 
- - Mention NUMA effects?
-   - to the extent of: _just throw more threads at it_ may not always be the
-     best solution, NUMA effects + memory bandwidth + cache thrashing + locking
-       - Oh look it got complicated/
+## Parallel regions
+ - What we just saw was in fact a _compound_ directive:
+\pause
+ - `!$omp parallel`
+\pause
+	 - Creates a parallel region
+	 - Actually spawns threads
+	 - All threads _run the exact same code_
+\pause
+ - `!$omp do`
+\pause
+   - Instructs the runtime to distribute the work from the loop _directly
+		 following_ over the spawned threads
+
+## OpenMP - data sharing
+ - By default, any variables declared _before_ a parallel region is shared
+	 between threads. Any variable declared _within_ a parallel region is private
+	 to each thread.
+ - We can use _data sharing_ clauses to specify a variables data sharing
+	 properties within a loop
+ - Variables can be `shared`, `private`, `firstprivate` or `lastprivate`
+ - The data sharing properties are important: incorrect data sharing can lead to
+	 painful-to-debug problems (e.g. race conditions)
+
+## OpenMP - data sharing
+::: columns
+:::: column
+```C
+#pragma omp parallel for
+for (int i = 0; i < N; i++) {
+	float tmp = a*x[i];
+	y[i] = tmp + y[i];
+}
+```
+::::
+:::: column
+```C
+float tmp;
+#pragma omp parallel for
+for (int i = 0; i < N; i++) {
+	tmp = a*x[i];
+	y[i] = tmp + y[i];
+}
+```
+::::
+:::
+
+
+## OpenMP - data sharing
+::: columns
+:::: column
+```C
+#pragma omp parallel for
+for (int i = 0; i < N; i++) {
+	float tmp = a*x[i];
+	y[i] = tmp + y[i];
+}
+```
+::::
+:::: column
+```C
+float tmp;
+#pragma omp parallel for private(tmp)
+for (int i = 0; i < N; i++) {
+	tmp = a*x[i];
+	y[i] = tmp + y[i];
+}
+```
+::::
+:::
+
+## OpenMP - data sharing
+ - The `default` clause specifies the default sharing mode for all variables
+	 passed into a parallel region.
+ - Options are `shared`, `private`, `firstprivate` and `none`
+	 - `default(none)` means _all_ variables must have their data sharing
+		 properties declared explicitly
+	 - _use this_
+
+## OpenMP - data sharing
+\pause
+ - _use default(none)_
+
+
+## Reductions
+ - The `reduction` clause is used to specify reduction variables and operations.
+ - Reduction variables are `private`
+```fortran
+!$omp parallel do reduction(+:sum)
+do i=1,10
+	sum += i
+end do
+!$omp end do
+
+write(*,*) "Sum: ", sum
+```
 
 ## OpenMP - GPU
+ - That's about all you need to get going with OpenMP on a CPU.
+ - But the point of this course is to use OpenMP to _offload_ computation to the
+	 GPU
 
- - !$omp parallel do -> !$omp target parallel do
-  - works!
-  - Terribly slow!
+## OpenMP - GPU
+::: columns
+:::: column
+```fortran
+!$omp parallel do
+do i=1,N
+	y(i) = a*x(i) + y(i)
+end do
+!$omp end parallel do
+```
+::::
+\pause
+:::: column
+```fortran
+!$omp target parallel do
+do i=1,N
+	y(i) = a*x(i) + y(i)
+end do
+!$omp end target parallel do
+```
+::::
+:::
 
- - > GPU architecture intermezzo
+## OpenMP - GPU
+::: columns
+:::: column
+```fortran
+!$omp target parallel do
+do i=1,N
+	y(i) = a*x(i) + y(i)
+end do
+!$omp end target parallel do
+```
+::::
+\pause
+:::: column
+  - This works!
+\pause
+  - This is terrifically slow!
+\pause
+  - Let's talk about GPU architectures for a bit
+::::
+:::
 
 ## GPU Architecture
  - GPUs have a fundamentally different architecture to CPUs
  - My favourite bad analogy: trucks on a motorway vs freight train/container
    ship
- - <image for analogy>
+ - `TODO: image for analogy`
 
 ## GPU Architecture
- - <GPU architecture image (vs cpu?) >
+![Intel PVC](pvc_block.jpg){height=200px}
 
+## GPU Architecture
+::: columns
+:::: column
+![Intel PVC](pvc_block_intel.png){height=300px}
+::::
+:::: column
  - Hierarchical nature
  - OpenMP maps quite closely
+::::
+:::
+
 
 ## OpenMP - GPU 2
- - expand into target teams distribute parallel do simd
+ - If we want to fully utilise the GPU, we'll have to _explicitly_ tell the
+	 OpenMP runtime to use each level of parallelism the GPU offers.
+ - This translates into using this beauty of a directive:
+\pause
+```fortran	 
+!$omp target teams distribute parallel do simd
+do i=1,N
+	y(i) = a*x(i) + y(i)
+end do
+!$omp end target teams distribute parallel do simd
+```
+\pause
+ - Let's break that down...
+
+## OpenMP - GPU directive breakdown
+```fortran	 
+!$omp TARGET
+do i=1,N
+	y(i) = a*x(i) + y(i)
+end do
+!$omp end TARGET
+```
+ - The `target` directive instructs the compiler to generate a GPU offload
+	 kernel for the enclosed code.
+
+## OpenMP - GPU directive breakdown
+```fortran	 
+!$omp target PARALLEL DO
+do i=1,N
+	y(i) = a*x(i) + y(i)
+end do
+!$omp end target PARALLEL DO
+```
+ - The `parallel do` directive works largely the same as on the CPU: distribute the loop
+	 iterations over multiple threads.
+	 - But only _within an execution unit_
+
+## OpenMP - GPU directive breakdown
+```fortran	 
+!$omp target TEAMS parallel do
+do i=1,N
+	y(i) = a*x(i) + y(i)
+end do
+!$omp end target TEAMS parallel do
+```
+ - The `teams` directive creates a _team_ of threads on _multiple execution
+	 units_.
+
+## OpenMP - GPU directive breakdown
+```fortran	 
+!$omp target teams DISTRIBUTE parallel do
+do i=1,N
+	y(i) = a*x(i) + y(i)
+end do
+!$omp end target teams DISTRIBUTE parallel do
+```
+ - The `distribute` keyword ensure the loop iterations are distributed _across
+	 teams_
+
+
+## OpenMP - GPU directive breakdown
+```fortran	 
+!$omp target teams distribute parallel do SIMD
+do i=1,N
+	y(i) = a*x(i) + y(i)
+end do
+!$omp end target teams distribute parallel do SIMD
+```
+ - Finally, the `simd` clause enables use of the lowest-level vector units.
+
+## OpenMP - prescriptive vs descriptive
+ - What I've just shown is the original, _prescriptive_ way of declaring OpenMP
+	 parallelism for GPU kernels.
+ - A recent introduction to the standard is the `loop` directive, which is a
+	 _descriptive_ method of parallelising loops
+```fortran
+!$omp target teams loop
+do i=1,N
+	y(i) = a*x(i) + y(i)
+!$omp end target teams loop
+```
+ - It's much less verbose, but gives less control
+	 - I recommed getting familiar with prescriptive directives first.
+	 - I'll use `loop` in some examples for brevity.
+
+## OpenMP - GPU memory
+\ pause
+ - Back to GPU architecture for a second
 
 ## OpenMP - GPU memory
  - Offload device & CPU (usually) have separate physical memory
+```
  [RAM]      [VRAM]
    |          |
    |          |
  [CPU]------[GPU]
-
+```
 
 
 ## OpenMP - data movement
@@ -98,13 +380,19 @@ GPU memory
    - Note _map_: the runtime keeps a _mapping_ between host and device memory
    - GPU memory always has a host equivalent!*
 
+## Data movement - interlude
+\pause
+ - Moving data between host and device is *slow*
+\pause
+ - _Avoid_ it if you can!
+
 ## The `map` clause
  - Adding a `map` clause to an omp target region provides the compiler with
 	 instructions on how to move data around
  - Format:
-	   - `map(<operation>:var1[,var2,...])`
-		 - Valid operations: `to`, `from`, `tofrom`, `alloc`
-		 - `tofrom` is default
+   - `map(<operation>:var1[,var2,...])`
+   - Valid operations: `to`, `from`, `tofrom`, `alloc`
+   - `tofrom` is default
 	
  (TODO: table-ise ops)
 
@@ -112,7 +400,7 @@ GPU memory
 	- Will discuss these in order
 
 ## Controlling data movement for a compute kernel
-```
+```fortran
 !$omp target teams loop
 do i=1,N
 	c(i) = a(i) + b(i)
@@ -125,7 +413,7 @@ end do
 
 
 ## Controlling data movement for a compute kernel
-```
+```fortran
 !$omp target teams loop
 do i=1,N
 	c(i) = a(i) + b(i)
@@ -137,7 +425,7 @@ end do
 	 - Writing the result to `c`
 
 ## Controlling data movement for a compute kernel
-```
+```fortran
 !$omp target teams loop
 do i=1,N
 	c(i) = a(i) + b(i)
@@ -151,7 +439,7 @@ end do
 
 
 ## Controlling data movement for a compute kernel
-```
+```fortran
 !$omp target teams loop map(to:a(1:N),b(1:N)) map(from:c(1:N))
 do i=1,N
 	c(i) = a(i) + b(i)
@@ -171,22 +459,150 @@ end do
  - OpenMP data regions map data to the GPU, and _keep it there_ until the region
 	 ends.
  - Can be either _structured_ or _unstructured_
- - 
 
 ## Data regions - structured
- - omp target data - structured/scoped
+ - We can create structured (or scoped) data regions with the `omp target data`
+	 directive
+ - Useful when keeping data resident within a specific region of the code (e.g.
+	 within a subroutine).
+
+```fortran
+!$omp target data map(to:a(1:N)) map(tofrom:b(1:N))
+
+!$omp target teams loop
+do i=1,N
+	b(i) = a(i)+b(i)
+end do
+!$omp end target teams
+
+!$omp end target data
+```
+
 
 ## Accessing host data within data regions
- - Nested data regions
- - `update` directive
+ - May want to keep data resident on the GPU most of the time, but still need to
+	 update on the host.
+   - Nested data regions
+   - `update` directive
+
+## Update directive
+```fortran
+!$omp target data map(to:a(1:N)) map(tofrom:b(1:N))
+
+!$omp target teams loop
+do i=1,N
+	b(i) = a(i) + b(i)
+end do
+!$omp end target teams loop
+
+call update_on_host(a)
+!$omp target update to(a(1:N))
+
+!$omp target teams loop
+do i=1,N
+	b(i) = 2*a(i) + b(i)
+end do
+!$omp end target teams loop
+
+!$omp end target data
+```
 
 ## Data regions - unstructured
- - omp target enter/exit data - unstructured/unscoped
+ - Sometimes a scoped data region does not fit your program
+ - Alternative: unstructured data region
+ - Use the `target enter data` and `target exit data` directives
+ - Mostly the same `map` clauses, except:
+	  - `enter data`accepts `to` and `alloc`
+		- `exit data` accepts `from`, `delete` and `release`
+		- `tofrom` is not accepted
+
+## Data regions - unstructured
+::: columns
+:::: column
+```fortran
+call map_data_to_device(A)
+
+call gpu_algorithm(A, tmp)
+
+!$omp target exit data map(from:A) &
+!$omp& map(delete:tmp)
+```
+::::
+
+::::column
+```fortran
+subroutine map_data_to_device(A)
+!$omp target enter data map(to:A)
+end subroutine
+
+subroutine gpu_algorithm(A, tmp)
+...
+!$omp target enter data map(alloc:tmp)
+end subroutine
+```
+::::
+
+:::
+
+## Resident variables and GPU routines
+ - The `declare target` directive dictates that something this resident in
+	 device memory for the duration of a program
+\pause
+ - This can be variables (e.g. global variables that are often used)
+\pause
+ - But can also be used to generate offloaded version of functions or
+	 subroutines
+   - Can be called from `omp target` regions!
 
 ## OpenMP - GPU libraries
- - target variant
- - host\_data use\_device
+ - For performance reasons, we might to call out to a GPU-enabled library
+	  - e.g. LAPACK, BLAS, FFT, Eigen etc
+ - May be vendor-specific (exercise for the reader)
+ - Often expect device memory pointers to be passed into them
+	
+## OpenMP - GPU libraries
+ - OpenMP can expose device pointers using the `use_device_addr` directive:
+
+```fortran
+integer :: N
+real, dimension(:) :: my_array
+
+...
+
+!$omp target data use_device_addr(my_array)
+	call my_gpu_library(N, my_array)
+!$omp end target data
+```
+
+## OpenMP - GPU libraries - target variant
+ - The `variant` directive (standardised in OpenMP 5.2) allows developers to
+	 specify host and device variants of the same routine, with the same interface
+ - OpenMP will choose correct variant based on the type of pointer (host or
+	 device) passed to the routine
+
+```fortran
+!$omp target data use_device_addr(A,B,C)
+!$omp target variant
+	call dgemm(..., A, ..., B, ..., C, ...) ! A, B, C are device pointers -> call device routine
+!$omp end target variant
+!$omp end target data
+```
+
+## Final comments
+ - This should (hopefully) be enough to get you started with OpenMP offloading
+ - OpenMP has many more features:
+   - Tasking
+   - ...
+
+ - As a rule: any OpenMP feature that is supported on the CPU, is supported on GPUs as well
 
 ## Exercises
+ - On GitHub
+ - Using Dawn
 
-I guess saxpy?
+## Logging in & getting started
+ - Login using:
+	 - https://login-web.hpc.cam.ac.uk
+	 - ssh <user>@login.hpc.cam.ac.uk
+
+ - `git clone git@github.com:ICCS/openmp.git`

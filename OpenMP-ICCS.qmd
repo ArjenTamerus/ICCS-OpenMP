@@ -258,10 +258,19 @@ end do
  - `TODO: image for analogy`
 
 ## GPU Architecture
- - `TODO: GPU architecture image (vs cpu?)`
+![Intel PVC](pvc_block.jpg){height=200px}
 
+## GPU Architecture
+::: columns
+:::: column
+![Intel PVC](pvc_block_intel.png){height=300px}
+::::
+:::: column
  - Hierarchical nature
  - OpenMP maps quite closely
+::::
+:::
+
 
 ## OpenMP - GPU 2
  - If we want to fully utilise the GPU, we'll have to _explicitly_ tell the
@@ -535,6 +544,15 @@ end subroutine
 
 :::
 
+## Resident variables and GPU routines
+ - The `declare target` directive dictates that something this resident in
+	 device memory for the duration of a program
+\pause
+ - This can be variables (e.g. global variables that are often used)
+\pause
+ - But can also be used to generate offloaded version of functions or
+	 subroutines
+   - Can be called from `omp target` regions!
 
 ## OpenMP - GPU libraries
  - For performance reasons, we might to call out to a GPU-enabled library
@@ -555,7 +573,6 @@ real, dimension(:) :: my_array
 	call my_gpu_library(N, my_array)
 !$omp end target data
 ```
- - also `is_device_ptr` etc
 
 ## OpenMP - GPU libraries - target variant
  - The `variant` directive (standardised in OpenMP 5.2) allows developers to

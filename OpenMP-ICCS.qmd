@@ -17,6 +17,8 @@ date: 11/07/2024
  - ~ 1 hour introduction to OpenMP
  - ~ 2 hours practical exercises
 
+ - Debugging this presentation, thanks
+
 ## Restrictions
 
  - OpenMP is a big specification
@@ -29,15 +31,12 @@ date: 11/07/2024
    - C, Fortran, Python (mostly)
 
  - If we want to scale up our calculations, we usually use any number of
-   frameworks or tools to 
- - Serial limitations
- - Types of parallelism:
-  - Scale-out/Distributed (MPI, not in scope)
+   frameworks or tools to employ parallelism
+  - Scale-out/Distributed computing (e.g. MPI)
   - Intra-node: threading (OpenMP-CPU)
   - Accelerators (e.g. GPU, A100/PVC)
     - main focus of talk
 
- - Amdahl's Law?
 
 ## OpenMP
  - Directive-based: annotations in your source code
@@ -495,7 +494,7 @@ do i=1,N
 end do
 !$omp end target teams loop
 
-call update_on_host(a)
+call do_cpu_work(a)
 !$omp target update to(a(1:N))
 
 !$omp target teams loop

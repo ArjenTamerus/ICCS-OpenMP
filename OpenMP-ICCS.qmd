@@ -42,19 +42,19 @@ date: 11/07/2024
 	 - AI happens
 
 ## Why go parallel
-![CPU](cpu.1.png){height=70%}
+![CPU](images/cpu.1.png){height=70%}
 
 
 ## Why go parallel
-![CPU](cpu.2.png){height=70%}
+![CPU](images/cpu.2.png){height=70%}
 
 
 ## Why go parallel
-![CPU](cpu.3.png){height=70%}
+![CPU](images/cpu.3.png){height=70%}
 
 
 ## Why go parallel
-![CPU](cpu.drawio.png){height=70%}
+![CPU](images/cpu.drawio.png){height=70%}
 
 ## Oh no, my computer has gone parallel
 
@@ -286,12 +286,12 @@ end do
  - `TODO: image for analogy`
 
 ## GPU Architecture
-![Intel PVC](pvc_block.jpg){height=70%px}
+![Intel PVC](images/pvc_block.jpg){height=70%px}
 
 ## GPU Architecture
 ::: columns
 :::: column
-![Intel PVC](pvc_block_intel.png){height=70%}
+![Intel PVC](images/pvc_block_intel.png){height=70%}
 ::::
 :::: column
  - Hierarchical nature
@@ -396,7 +396,7 @@ do i=1,N
  - Offload device & CPU (usually) have separate physical memory
 ::::
 :::: column
-![architecture](node.cut.png)
+![architecture](images/node.cut.png)
 ::::
 :::
 
@@ -578,12 +578,15 @@ end subroutine
 	 subroutines
    - Can be called from `omp target` regions!
 
+## Things to keep in mind
+ - 
 
 ## Final comments
  - This should (hopefully) be enough to get you started with OpenMP offloading
  - OpenMP has many more features:
    - Tasking
    - Asynchronous offload
+	 - synchronisation
 	 - ...
 
  - As a rule: any OpenMP feature that is supported on the CPU, is supported on GPUs as well

@@ -17,38 +17,63 @@ date: 11/07/2024
  - ~ 1 hour introduction to OpenMP
  - ~ 2 hours practical exercises
 
- - Debugging this presentation, thanks
-
 ## Restrictions
 
  - OpenMP is a big specification
  - We'll focus on a useful subset (loop parallelism)
 	 - Aim is to get you familiar with OpenMP
 
-## Parallelism in compute
+## Why go parallel
 
- - Most common programming languages are (still) inherently serial\*:
-   - C, Fortran, Python (mostly)
+ - Go back 20+ years, and most processors were serial
+	- Want more performance? Buy a faster CPU (or wait til next year)
+	- ... or go parallel: connect a bunch of servers
 
- - If we want to scale up our calculations, we usually use any number of
-   frameworks or tools to employ parallelism
-  - Scale-out/Distributed computing (e.g. MPI)
-  - Intra-node: threading (OpenMP-CPU)
-  - Accelerators (e.g. GPU, A100/PVC)
-    - main focus of talk
+ - Mid-2000's:
+	 - CPU frequency scaling stops
+		 - Physics got in the way, power and heat become unmanageable
+	 - Start increasing the number of cores per CPU
+
+ - ~2010 onwards:
+	 - Nvidia generalises GPU architecture
+	 - Realises these things are great for algebra
+	 - AI happens
+
+## Why go parallel
+![CPU](cpu.1.png){height=70%}
+
+
+## Why go parallel
+![CPU](cpu.2.png){height=70%}
+
+
+## Why go parallel
+![CPU](cpu.3.png){height=70%}
+
+
+## Why go parallel
+![CPU](cpu.drawio.png){height=70%}
+
+## Oh no, my computer has gone parallel
+
+ - Many programming languages are still inherently serial
+ - OpenMP was introduced to make parallel programming accessible:
+   - Without having to learn a fundamentally new programming method
+   - With minimal changes to existing (serial) code
+\pause
+
+ - First released mid-90s for CPU-level parallelism
+ - Support for GPU acceleration added ~2015
+
 
 
 ## OpenMP
  - Directive-based: annotations in your source code
  	- Only for: C, C++, Fortran
 
- - Origins: Fortran, then C, then unified
-  - CPU-only until 4.5
+ - Today's focus is GPU ('offload'), but we'll cover the CPU essentials
 
- - GPU functionality matured from 5.x onwards; v6 releasing soon
- - Feature parity between languages
-
- - Today's focus is GPU ('offload'), but will cover the CPU essentials
+## what is a directive
 
 ## OpenMP - CPU
  - As mentioned: OpenMP is a directive-based parallel framework
@@ -83,7 +108,7 @@ end do
 ::::
 :::
 
-## OpenMP - CPU
+## OpenMP - C-style example
 
 ::: columns
 :::: column
@@ -201,12 +226,21 @@ end do
 write(*,*) "Sum: ", sum
 ```
 
-## OpenMP - GPU
+## Moving to GPU
  - That's about all you need to get going with OpenMP on a CPU.
  - But the point of this course is to use OpenMP to _offload_ computation to the
 	 GPU
 
-## OpenMP - GPU
+## Offloading to the GPU
+ - So far we've been running code only on the CPU
+	 - we call this running on the _host_
+
+ - We want to run our code on a GPU.
+	 - OpenMP calls this _offloading_ a computation to a _device_
+	 - We achieve this by telling OpenMP to _target_ a device for a computation
+	 - We call the offloaded computation a _device kernel_
+
+## The target directive
 ::: columns
 :::: column
 ```fortran
@@ -217,19 +251,11 @@ end do
 !$omp end parallel do
 ```
 ::::
-\pause
 :::: column
-```fortran
-!$omp target parallel do
-do i=1,N
-	y(i) = a*x(i) + y(i)
-end do
-!$omp end target parallel do
-```
 ::::
 :::
 
-## OpenMP - GPU
+## The target directive
 ::: columns
 :::: column
 ```fortran
@@ -358,32 +384,28 @@ do i=1,N
 	 - I'll use `loop` in some examples for brevity.
 
 ## OpenMP - GPU memory
-\ pause
+\pause
  - Back to GPU architecture for a second
 
 ## OpenMP - GPU memory
+::: columns
+:::: column
  - Offload device & CPU (usually) have separate physical memory
-```
- [RAM]      [VRAM]
-   |          |
-   |          |
- [CPU]------[GPU]
-```
+::::
+:::: column
+![architecture](node.cut.png)
+::::
+:::
 
 
 ## OpenMP - data movement
  - By default, the OpenMP runtime will copy _all_ required data to and from the
 GPU memory
  - Can be extremely inefficient!
+	 - Avoid unnecessary data movement whenever you can
  - Can control data movement using the `map` clause
    - Note _map_: the runtime keeps a _mapping_ between host and device memory
    - GPU memory always has a host equivalent!*
-
-## Data movement - interlude
-\pause
- - Moving data between host and device is *slow*
-\pause
- - _Avoid_ it if you can!
 
 ## The `map` clause
  - Adding a `map` clause to an omp target region provides the compiler with
@@ -393,7 +415,6 @@ GPU memory
    - Valid operations: `to`, `from`, `tofrom`, `alloc`
    - `tofrom` is default
 	
- (TODO: table-ise ops)
 
  - Can control data movement per kernel, or create _data regions_
 	- Will discuss these in order
@@ -544,14 +565,37 @@ end subroutine
 :::
 
 ## Resident variables and GPU routines
- - The `declare target` directive dictates that something this resident in
+ - The `declare target` directive dictates that something should be present in
 	 device memory for the duration of a program
 \pause
  - This can be variables (e.g. global variables that are often used)
 \pause
- - But can also be used to generate offloaded version of functions or
+ - But can also be used to generate offloaded versions of functions or
 	 subroutines
    - Can be called from `omp target` regions!
+
+
+## Final comments
+ - This should (hopefully) be enough to get you started with OpenMP offloading
+ - OpenMP has many more features:
+   - Tasking
+   - ...
+
+ - As a rule: any OpenMP feature that is supported on the CPU, is supported on GPUs as well
+
+## Exercises
+ - On GitHub
+ - Using Dawn
+
+## Logging in & getting started
+ - Login using:
+	 - https://login-web.hpc.cam.ac.uk
+	 - ssh <user>@login.hpc.cam.ac.uk
+
+ - `git clone git@github.com:ICCS/openmp.git`
+
+
+## Thanks
 
 ## OpenMP - GPU libraries
  - For performance reasons, we might to call out to a GPU-enabled library
@@ -587,21 +631,21 @@ real, dimension(:) :: my_array
 !$omp end target data
 ```
 
-## Final comments
- - This should (hopefully) be enough to get you started with OpenMP offloading
- - OpenMP has many more features:
-   - Tasking
-   - ...
+## Parallelism in programming
 
- - As a rule: any OpenMP feature that is supported on the CPU, is supported on GPUs as well
+ - Most common programming languages are (still) inherently serial\*:
+   - C, Fortran, Python (mostly)
 
-## Exercises
- - On GitHub
- - Using Dawn
+ - If we want to scale up our calculations, we usually use any number of
+   frameworks or tools to employ parallelism
+  - Scale-out/Distributed computing (e.g. MPI)
+  - Intra-node: threading (OpenMP-CPU)
+  - Accelerators (e.g. GPU, A100/PVC)
+    - main focus of talk
 
-## Logging in & getting started
- - Login using:
-	 - https://login-web.hpc.cam.ac.uk
-	 - ssh <user>@login.hpc.cam.ac.uk
 
- - `git clone git@github.com:ICCS/openmp.git`
+## Data movement - interlude
+\pause
+ - Moving data between host and device is *slow*
+\pause
+ - _Avoid_ it if you can!

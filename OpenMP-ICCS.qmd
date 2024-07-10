@@ -8,8 +8,6 @@ aspectratio: 169
 date: 11/07/2024
 ---
 
-# OpenMP for ICCS
-
 ## Goals
 
  - Get you going with OpenMP offloading
@@ -28,11 +26,15 @@ date: 11/07/2024
  - Go back 20+ years, and most processors were serial
 	- Want more performance? Buy a faster CPU (or wait til next year)
 	- ... or go parallel: connect a bunch of servers
+\pause
+
 
  - Mid-2000's:
 	 - CPU frequency scaling stops
 		 - Physics got in the way, power and heat become unmanageable
 	 - Start increasing the number of cores per CPU
+\pause
+
 
  - ~2010 onwards:
 	 - Nvidia generalises GPU architecture
@@ -63,6 +65,7 @@ date: 11/07/2024
 \pause
 
  - First released mid-90s for CPU-level parallelism
+	 - Parallelism is achieved through _multithreading_
  - Support for GPU acceleration added ~2015
 
 
@@ -149,7 +152,7 @@ for (int i = 0; i < N; i++) {
 	 to each thread.
  - We can use _data sharing_ clauses to specify a variables data sharing
 	 properties within a loop
- - Variables can be `shared`, `private`, `firstprivate` or `lastprivate`
+ - Variables can be `shared`, `private`, `firstprivate`
  - The data sharing properties are important: incorrect data sharing can lead to
 	 painful-to-debug problems (e.g. race conditions)
 
@@ -283,12 +286,12 @@ end do
  - `TODO: image for analogy`
 
 ## GPU Architecture
-![Intel PVC](pvc_block.jpg){height=200px}
+![Intel PVC](pvc_block.jpg){height=70%px}
 
 ## GPU Architecture
 ::: columns
 :::: column
-![Intel PVC](pvc_block_intel.png){height=300px}
+![Intel PVC](pvc_block_intel.png){height=70%}
 ::::
 :::: column
  - Hierarchical nature
@@ -405,7 +408,7 @@ GPU memory
 	 - Avoid unnecessary data movement whenever you can
  - Can control data movement using the `map` clause
    - Note _map_: the runtime keeps a _mapping_ between host and device memory
-   - GPU memory always has a host equivalent!*
+   - GPU memory always has a host equivalent!
 
 ## The `map` clause
  - Adding a `map` clause to an omp target region provides the compiler with
@@ -453,9 +456,9 @@ end do
 !$omp end target teams loop
 ```
  - In this loop we are:
-	 - Reading from `a` and `b` -> Their value's don't change!
+	 - Reading from `a` and `b` -> Their values don't change!
 	 - Writing the result to `c` -> We're not reading, so the GPU doesn't have to
-		 know the initial value!
+		 know the initial value
 
 
 ## Controlling data movement for a compute kernel
@@ -532,11 +535,12 @@ end do
  - Alternative: unstructured data region
  - Use the `target enter data` and `target exit data` directives
  - Mostly the same `map` clauses, except:
-	  - `enter data`accepts `to` and `alloc`
+	  - `enter data` accepts `to` and `alloc`
 		- `exit data` accepts `from`, `delete` and `release`
 		- `tofrom` is not accepted
 
 ## Data regions - unstructured
+\small
 ::: columns
 :::: column
 ```fortran
@@ -579,73 +583,29 @@ end subroutine
  - This should (hopefully) be enough to get you started with OpenMP offloading
  - OpenMP has many more features:
    - Tasking
-   - ...
+   - Asynchronous offload
+	 - ...
 
  - As a rule: any OpenMP feature that is supported on the CPU, is supported on GPUs as well
 
-## Exercises
- - On GitHub
- - Using Dawn
+## Thanks
+
+ - Onto the exercises
 
 ## Logging in & getting started
  - Login using:
-	 - https://login-web.hpc.cam.ac.uk
-	 - ssh <user>@login.hpc.cam.ac.uk
+	 - `ssh <user>@login.hpc.cam.ac.uk`
 
- - `git clone git@github.com:ICCS/openmp.git`
+ - Clone the repository:
+	- `git clone git@github.com:ICCS/openmp.git`
 
+## Logging in & getting started
+ - Get access to a compute node
+	 - `./get_compute_node.sh`
 
-## Thanks
+ - Set up your environment
+	 - `source set_up_environment.sh`
 
-## OpenMP - GPU libraries
- - For performance reasons, we might to call out to a GPU-enabled library
-	  - e.g. LAPACK, BLAS, FFT, Eigen etc
- - May be vendor-specific (exercise for the reader)
- - Often expect device memory pointers to be passed into them
-	
-## OpenMP - GPU libraries
- - OpenMP can expose device pointers using the `use_device_addr` directive:
+## Logging in & getting started
+ - 
 
-```fortran
-integer :: N
-real, dimension(:) :: my_array
-
-...
-
-!$omp target data use_device_addr(my_array)
-	call my_gpu_library(N, my_array)
-!$omp end target data
-```
-
-## OpenMP - GPU libraries - target variant
- - The `variant` directive (standardised in OpenMP 5.2) allows developers to
-	 specify host and device variants of the same routine, with the same interface
- - OpenMP will choose correct variant based on the type of pointer (host or
-	 device) passed to the routine
-
-```fortran
-!$omp target data use_device_addr(A,B,C)
-!$omp target variant
-	call dgemm(..., A, ..., B, ..., C, ...) ! A, B, C are device pointers -> call device routine
-!$omp end target variant
-!$omp end target data
-```
-
-## Parallelism in programming
-
- - Most common programming languages are (still) inherently serial\*:
-   - C, Fortran, Python (mostly)
-
- - If we want to scale up our calculations, we usually use any number of
-   frameworks or tools to employ parallelism
-  - Scale-out/Distributed computing (e.g. MPI)
-  - Intra-node: threading (OpenMP-CPU)
-  - Accelerators (e.g. GPU, A100/PVC)
-    - main focus of talk
-
-
-## Data movement - interlude
-\pause
- - Moving data between host and device is *slow*
-\pause
- - _Avoid_ it if you can!

@@ -19,14 +19,11 @@ program saxpy
     x(i) = 2*i
   end do
 
-  ! Exercise: Like exercise 2, parallelise this loop using OpenMP - but this time,
-  ! on the GPU using a `target` directive.
-  ! Why not try both the descriptive (teams loop) and prescriptive methods?
-! !$omp target
+  !$omp target teams distribute parallel do simd
   do i=1,N
     y(i) = a * x(i) + y(i)
   end do
-! !$omp end target
+  !$omp end target teams distribute parallel do simd
 
 
   write (*,*) "First value of y:", y(1)

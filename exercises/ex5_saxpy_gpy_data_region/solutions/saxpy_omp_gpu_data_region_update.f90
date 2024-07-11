@@ -48,8 +48,12 @@ program saxpy
     subroutine modify_on_host(data, N)
       real, dimension(:), intent(inout) :: data
       integer, intent(in) :: N
+      integer :: i
 
-      y = y * 2
+      do i=1, N
+        data(i) = data(i) * 2
+      end do
+
     end subroutine modify_on_host
 
 end program saxpy

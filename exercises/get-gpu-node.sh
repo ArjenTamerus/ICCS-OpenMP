@@ -1,19 +1,17 @@
 #!/bin/bash
 
-set -x
-set -e
+# set -x
+# set -e
 
-PARTITION=pvc
-TIME=03:00:00
-SLURM_ACCOUNT=SUPPORT-GPU
-#SLURM_ACCOUNT=TRAINING-DAWN-GPU
+PARTITION=ampere
+TIME=04:00:00
+SLURM_ACCOUNT=TRAINING-GPU
 
-
-salloc -p pvc \
-    -A ${SLURM_ACCOUNT} \
-    -N 1 \
+salloc --partition=${PARTITION} \
+    --account=${SLURM_ACCOUNT} \
+    --nodes=1 \
     --gres=gpu:1 \
-    -t 4:0:0 \
+    --time=04:00:00 \
     srun --interactive \
          --preserve-env \
          --pty /bin/bash

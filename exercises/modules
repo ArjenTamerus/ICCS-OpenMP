@@ -1,0 +1,4 @@
+module purge
+module load  rhel8/default-gpu
+module load nvhpc/22.3/gcc-9.4.0-ywtqynx  
+module load rhel8/slurm-test

@@ -291,7 +291,7 @@ end do
 ## GPU Architecture
  - GPUs have a fundamentally different architecture to CPUs
  - My favourite bad analogy: trucks on a motorway vs container ship
-[](images/truckship.jpg)
+![](images/truckship.jpg)
 
 ## GPU Architecture
 ![Intel PVC](images/pvc_block.jpg){height=70%px}

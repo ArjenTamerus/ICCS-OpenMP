@@ -20,18 +20,11 @@ program saxpy
     x(i) = 2*i
   end do
 
-  ! Exercise: We've got our parallel loop implemented.
-  ! Can you optimise the data movement for this kernel?
-  ! Fill out and expand the map clause(s).
-  !
-  ! Note we're using an extra `z` array this time.
-  ! Can you do it with just `x` and `y`?
-
-!  !$omp target teams distribute parallel do simd map()
+  !$omp target teams distribute parallel do simd map(to:x(1:N),y(1:N)) map(from:z(1:N))
   do i=1,N
     z(i) = a * x(i) + y(i)
   end do
-!  !$omp end target teams distribute parallel do simd
+  !$omp end target teams distribute parallel do simd
 
 
   write (*,*) "First value of z:", z(1)

@@ -20,18 +20,9 @@ program saxpy
     x(i) = 2*i
   end do
   
-  ! Exercise: implement this data region
-  ! Take a look at the code and see how the arrays are used on the CPU and/or GPU
-  ! and add data mapping clauses as appropriate.
-  !
-  ! You may have to add some map clauses to the offloaded kernels themselves,
-  ! or make use of the `update` directive.
-  !
-  ! Why not try both?
+  !$omp target data map(to:x(1:N)) map(from:z(1:N))
 
-!  !$omp target data map()
-
-  !$omp target teams distribute parallel do simd
+  !$omp target teams distribute parallel do simd map(to:y(1:N))
   do i=1,N
     z(i) = a * x(i) + y(i)
   end do
@@ -39,13 +30,13 @@ program saxpy
 
   call modify_on_host(y, N)
 
-  !$omp target teams distribute parallel do simd
+  !$omp target teams distribute parallel do simd map(to:y(1:N))
   do i=1,N
     z(i) = z(i) + a * x(i) + y(i)
   end do
   !$omp end target teams distribute parallel do simd
 
-!   !$omp end target data
+  !$omp end target data
 
   write (*,*) "First value of z:", z(1)
   write (*,*) "Last value of z:", z(N)

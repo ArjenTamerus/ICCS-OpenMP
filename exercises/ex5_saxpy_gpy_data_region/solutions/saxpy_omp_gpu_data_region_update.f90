@@ -13,8 +13,12 @@ program saxpy
   allocate(y(N))
   allocate(z(N))
 
-  ! TODO init
-  
+  a = 3.1415
+
+  do i=1,N
+    y(i) = i
+    x(i) = 2*i
+  end do
   
   !$omp target data map(to:x(1:N),y(1:N)) map(from:z(1:N))
 
@@ -24,17 +28,28 @@ program saxpy
   end do
   !$omp end target teams distribute parallel do simd
 
-  call modify_on_host(y)
-  !$omp target update to(y(1:N)
+  call modify_on_host(y, N)
+  !$omp target update to(y(1:N))
 
   !$omp target teams distribute parallel do simd
   do i=1,N
-    z(i) = a * x(i) + y(i)
+    z(i) = z(i) + a * x(i) + y(i)
   end do
   !$omp end target teams distribute parallel do simd
 
   !$omp end target data
 
   write (*,*) "Some result here"
+
+  write (*,*) "First value of z:", z(1)
+  write (*,*) "Last value of z:", z(N)
+
+  contains
+    subroutine modify_on_host(data, N)
+      real, dimension(:), intent(inout) :: data
+      integer, intent(in) :: N
+
+      y = y * 2
+    end subroutine modify_on_host
 
 end program saxpy

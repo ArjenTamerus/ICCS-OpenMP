@@ -8,6 +8,15 @@ aspectratio: 169
 date: 11/07/2024
 ---
 
+## Zettascale Lab
+
+- Brought to you in association with the Cambridge Open Zettascale Lab
+  - https://www.zettascale.hpc.cam.ac.uk/
+- Partnership with Dell, Intel, UKAEA
+- Launched Dawn - the current fastest AI supercomputer in UK
+- Researching next generation supercomputers - 1000x current perf
+  - Themes include programming models for heterogeneous systems
+
 ## Goals
 
  - Get you going with OpenMP offloading
@@ -42,19 +51,19 @@ date: 11/07/2024
 	 - AI happens
 
 ## Why go parallel
-![Compute node evolution](images/cpu.1.png){height=70%}
+![CPU](images/cpu.1.png){height=70%}
 
 
 ## Why go parallel
-![Compute node evolution](images/cpu.2.png){height=70%}
+![CPU](images/cpu.2.png){height=70%}
 
 
 ## Why go parallel
-![Compute node evolution](images/cpu.3.png){height=70%}
+![CPU](images/cpu.3.png){height=70%}
 
 
 ## Why go parallel
-![Compute node evolution](images/cpu.drawio.png){height=70%}
+![CPU](images/cpu.drawio.png){height=70%}
 
 ## Oh no, my computer has gone parallel
 
@@ -281,9 +290,9 @@ end do
 
 ## GPU Architecture
  - GPUs have a fundamentally different architecture to CPUs
- - My favourite bad analogy: trucks on a motorway vs container
+ - My favourite bad analogy: trucks on a motorway vs freight train/container
    ship
-![](images/truckship.jpg)
+ - `TODO: image for analogy`
 
 ## GPU Architecture
 ![Intel PVC](images/pvc_block.jpg){height=70%px}
@@ -396,7 +405,7 @@ do i=1,N
  - Offload device & CPU (usually) have separate physical memory
 ::::
 :::: column
-![Node architecture](images/node.cut.png)
+![architecture](images/node.cut.png)
 ::::
 :::
 
@@ -579,15 +588,7 @@ end subroutine
    - Can be called from `omp target` regions!
 
 ## Things to keep in mind
- - Note that all loops we've used in these slides have independent iterations
-	 - They are 'massively parallel'
-	 - This is required to prevent race conditions
-
-\pause
- - GPUs like to be overloaded with work
-	 - They have thousands of cores.
-	 - To efficiently use them, you'll have to provide them with _many times_
-		 as much work.
+ - 
 
 ## Final comments
  - This should (hopefully) be enough to get you started with OpenMP offloading
@@ -615,7 +616,7 @@ end subroutine
 	 - `./get_compute_node.sh`
 
  - Set up your environment
-	 - `source modules`
+	 - `source set_up_environment.sh`
 
 ## Logging in & getting started
  - 

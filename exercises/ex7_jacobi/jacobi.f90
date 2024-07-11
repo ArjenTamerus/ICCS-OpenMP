@@ -51,7 +51,7 @@ program jacobi
   !
   ! Feel free to refer to the solutions if you get stuck!
   do while (step < max_step)
-!$omp parallel do default(none) private(s,i) shared(N,A,x,x_new,B)
+  ! !$omp target
     do j=1,N
       s = 0
       do i=1,N
@@ -61,7 +61,7 @@ program jacobi
       end do
       x_new(j) = (B(j) - s)/A(j,j)
     end do
-!$omp end parallel do
+  ! !$omp end target
 
     step = step + 1
 
